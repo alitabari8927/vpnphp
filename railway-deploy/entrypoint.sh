@@ -35,4 +35,12 @@ PORT="${PORT:-8080}"
 sed -ri "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
 
+# Some Railway hosts re-enable an extra MPM module at container start,
+# which crashes Apache with "More than one MPM loaded." Force only
+# mpm_prefork (required by mod_php) right before Apache actually starts,
+# so this is immune to whatever state the platform left mods-enabled in.
+a2dismod mpm_event mpm_worker >/dev/null 2>&1 || true
+rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* 2>/dev/null || true
+a2enmod mpm_prefork >/dev/null 2>&1 || true
+
 exec "$@"
