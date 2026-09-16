@@ -54,6 +54,24 @@ function require_admin(): void {
 }
 
 function client_ip(): string {
+    // Railway (and most PaaS platforms) terminate the connection at an edge
+    // proxy, so $_SERVER['REMOTE_ADDR'] is always the proxy's internal IP,
+    // never the real user IP. The real client IP is forwarded in
+    // X-Forwarded-For. Railway's edge appends the true client IP and does
+    // not let clients overwrite it, so the left-most entry is trustworthy.
+    $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($xff !== '') {
+        $first = trim(explode(',', $xff)[0]);
+        if (filter_var($first, FILTER_VALIDATE_IP)) {
+            return $first;
+        }
+    }
+
+    $xRealIp = $_SERVER['HTTP_X_REAL_IP'] ?? '';
+    if ($xRealIp !== '' && filter_var($xRealIp, FILTER_VALIDATE_IP)) {
+        return $xRealIp;
+    }
+
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 
