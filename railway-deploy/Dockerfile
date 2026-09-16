@@ -9,7 +9,8 @@ COPY . /var/www/html/
 
 # Keep pristine copies of files that normally live inside the
 # persistent-data directories, so we can re-seed them on first boot.
-RUN mkdir -p /opt/defaults/storage /opt/defaults/uploads-ads \
+RUN mkdir -p /var/www/html/storage /var/www/html/uploads/ads \
+             /opt/defaults/storage /opt/defaults/uploads-ads \
     && cp -a /var/www/html/storage/. /opt/defaults/storage/ \
     && cp -a /var/www/html/uploads/ads/. /opt/defaults/uploads-ads/ \
     && chown -R www-data:www-data /var/www/html
