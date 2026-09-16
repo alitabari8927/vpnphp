@@ -2,7 +2,9 @@ FROM php:8.2-apache
 
 # PHP extensions required by the panel
 RUN docker-php-ext-install pdo pdo_mysql mysqli \
-    && a2enmod rewrite headers
+    && a2enmod rewrite headers \
+    && a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork
 
 # App code lives at /var/www/html (Apache default docroot)
 COPY . /var/www/html/
