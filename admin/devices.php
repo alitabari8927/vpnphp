@@ -1,7 +1,8 @@
 <?php require_once dirname(__DIR__).'/core/bootstrap.php';require_admin();$title='دستگاه‌ها';
 
 $q      = trim($_GET['q'] ?? '');
-$filter = in_array($_GET['filter'] ?? 'all', ['all', 'online', 'blocked'], true) ? $_GET['filter'] : 'all';
+$filterParam = (string)($_GET['filter'] ?? 'all');
+$filter = in_array($filterParam, ['all', 'online', 'blocked'], true) ? $filterParam : 'all';
 $page   = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 
