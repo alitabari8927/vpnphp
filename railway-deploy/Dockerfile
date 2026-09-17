@@ -6,6 +6,17 @@ RUN docker-php-ext-install pdo pdo_mysql mysqli \
     && a2dismod mpm_event mpm_worker 2>/dev/null || true \
     && a2enmod mpm_prefork
 
+# The base image's default upload_max_filesize (2M) is smaller than the 5MB
+# limit the admin panel itself advertises for ad images, so a 2-5MB image
+# was silently rejected by PHP before ever reaching our code, surfacing as
+# a misleading "تصویر لازم است" (image required) error. Raise both limits
+# to match what the panel actually allows, with headroom for the rest of
+# the multipart form (title, dates, CSRF token, etc).
+RUN { \
+        echo 'upload_max_filesize = 8M'; \
+        echo 'post_max_size = 10M'; \
+    } > /usr/local/etc/php/conf.d/uploads.ini
+
 # App code lives at /var/www/html (Apache default docroot)
 COPY . /var/www/html/
 
