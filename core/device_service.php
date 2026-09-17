@@ -23,8 +23,27 @@ function upsert_device(PDO $pdo, array $data): array
     $existing = $stmt->fetch();
 
     if ($existing) {
-        $pdo->prepare('UPDATE devices SET model=?, manufacturer=?, android_version=?, app_version=?, ip=?, last_seen_at=NOW(), request_count=request_count+1 WHERE id=?')
-            ->execute([$model, $manufacturer, $androidVersion, $appVersion, $ip, $existing['id']]);
+        // Not every check-in sends every field — the pre-connect access check only sends
+        // device_id and app_version, no model/manufacturer/android_version headers. Only
+        // overwrite a column when this request actually provided a value, so a lightweight
+        // check-in never blanks out data the full manifest fetch already recorded.
+        $pdo->prepare(
+            'UPDATE devices SET
+                model = CASE WHEN ? <> \'\' THEN ? ELSE model END,
+                manufacturer = CASE WHEN ? <> \'\' THEN ? ELSE manufacturer END,
+                android_version = CASE WHEN ? <> \'\' THEN ? ELSE android_version END,
+                app_version = CASE WHEN ? <> \'\' THEN ? ELSE app_version END,
+                ip = ?,
+                last_seen_at = NOW(),
+                request_count = request_count + 1
+             WHERE id = ?'
+        )->execute([
+            $model, $model,
+            $manufacturer, $manufacturer,
+            $androidVersion, $androidVersion,
+            $appVersion, $appVersion,
+            $ip, $existing['id']
+        ]);
         return ['ok' => true, 'blocked' => (bool)$existing['blocked']];
     }
 
