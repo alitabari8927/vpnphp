@@ -2,7 +2,21 @@
 
 function save_ad_image(array $f): string {
     $root = dirname(__DIR__);
-    if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) throw new Exception('تصویر لازم است.');
+    $error = $f['error'] ?? UPLOAD_ERR_NO_FILE;
+    if ($error !== UPLOAD_ERR_OK) {
+        // Distinguish "no file chosen" from "a file was chosen but the server
+        // rejected it" — these used to share the same generic "تصویر لازم است"
+        // message, which was misleading whenever the real cause was a size
+        // limit (PHP's own upload_max_filesize/post_max_size, hit before our
+        // 5MB app-level check even runs) rather than a missing file.
+        $message = match ($error) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'حجم تصویر از حد مجاز سرور بیشتر است. تصویر کوچک‌تری انتخاب کنید.',
+            UPLOAD_ERR_PARTIAL => 'آپلود تصویر ناقص انجام شد. دوباره تلاش کنید.',
+            UPLOAD_ERR_NO_FILE => 'تصویر لازم است.',
+            default => 'خطا در آپلود تصویر (کد ' . $error . ').',
+        };
+        throw new Exception($message);
+    }
     if (($f['size'] ?? 0) > 5 * 1024 * 1024) throw new Exception('حداکثر حجم ۵ مگابایت است.');
     $fi = new finfo(FILEINFO_MIME_TYPE);
     $mime = $fi->file($f['tmp_name']);
